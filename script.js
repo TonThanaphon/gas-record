@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+            // 📢 LOG: เริ่มต้นการทำงานของ script.js
+            console.log('✅ DOM Content Loaded: เริ่มต้นการทำงานของ script.js');
+
             // IMPORTANT: Paste your deployed Google Apps Script API URL here
-            const API_URL = 'https://script.google.com/macros/s/AKfycbyvIUwlohb4IOG6CYixTPrHAZGtH0TdSX8VxRhPBVvj17SPDZM2gTXTdEB31ResxIAkiw/exec';
+            // ต้องใช้ API URL ที่ถูกต้องและทำการ Deploy พร้อมยอมรับสิทธิ์ Drive แล้ว
+            const API_URL = 'https://script.google.com/macros/s/AKfycbz5zxXH1s-qntXNxIDX-z7Fhokutpbbi-tbzQ06DyeCEWZHkaldpCAZh73yuEXhnqOKpw/exec';
             
             // Select all necessary HTML elements once
             const splashScreen = document.getElementById('splash-screen');
             const mainContent = document.getElementById('main-content');
-            const logo = document.getElementById('logo');
             const smallLogo = document.getElementById('small-logo');
             const loginForm = document.getElementById('login-form');
             const dataForm = document.getElementById('data-form');
@@ -18,257 +21,320 @@ document.addEventListener('DOMContentLoaded', () => {
             const remainPressureInput = document.getElementById('remain-pressure');
             const photoUploadInput = document.getElementById('photo-upload');
             const submitMessage = document.getElementById('submit-message');
-            const fileInfo = document.getElementById('file-info');
+            
+            // NEW UI ELEMENTS for multiple files
+            const uploadBox = document.getElementById('upload-box');
+            const uploadPrompt = document.getElementById('upload-prompt');
+            const addMoreFiles = document.getElementById('add-more-files');
+            const fileListContainer = document.getElementById('file-list-container');
+            const uploadPromptLabel = document.getElementById('upload-prompt-label'); // Label for the file input
 
-            let employeeId = ''; // To store the logged-in user's ID
+            let employeeId = ''; 
+            // Collection to hold all selected files for submission
+            let selectedFiles = []; 
+            // Collection to hold temporary URLs for cleanup
+            let fileUrls = [];
 
-            // 1. Splash Screen Logic
-            setTimeout(() => {
-                logo.classList.add('logo-shrink-up');
-                logo.addEventListener('animationend', () => {
-                    splashScreen.style.display = 'none';
-                    mainContent.style.display = 'block';
-                    smallLogo.classList.remove('hidden');
-                    getDropdownData();
-                }, { once: true });
-            }, 3000);
+            // Helper to get file icon
+            function getFileIcon(mimeType) {
+                if (mimeType.startsWith('image/')) {
+                    return '🖼️'; // Image
+                }
+                if (mimeType.includes('pdf')) {
+                    return '📄'; // PDF
+                }
+                return '📎'; // Generic
+            }
 
-            // 2. API Fetch Function แบบปรับปรุง
-            async function callApi(action, data, isFileUpload = false) {
-                try {
-                    let requestBody;
+            // Function to render the list of selected files
+            function renderFileList() {
+                // Clear old list and old URLs
+                fileListContainer.innerHTML = '';
+                fileUrls.forEach(url => URL.revokeObjectURL(url));
+                fileUrls = [];
+
+                if (selectedFiles.length === 0) {
+                    // Reset to initial state
+                    uploadPrompt.style.display = 'flex';
+                    addMoreFiles.style.display = 'none';
+                    uploadBox.classList.remove('file-attached');
+                    uploadPromptLabel.style.borderTop = 'none';
+                    checkFormValidity();
+                    return;
+                }
+                
+                // Set state for attached files
+                uploadPrompt.style.display = 'none';
+                addMoreFiles.style.display = 'flex';
+                uploadBox.classList.add('file-attached');
+                uploadPromptLabel.style.borderTop = '1px dashed #ced4da'; // Add separator
+
+                // Build list items
+                selectedFiles.forEach((file, index) => {
+                    const tempUrl = URL.createObjectURL(file);
+                    fileUrls.push(tempUrl); // Store URL for later cleanup
                     
-                    if (isFileUpload) {
-                        // สำหรับการอัปโหลดไฟล์ ใช้ FormData ที่ส่งมาเลย
-                        requestBody = data;
-                    } else {
-                        // สำหรับการส่งข้อมูลปกติ (Login, getGasNames)
-                        const formData = new FormData();
-                        formData.append('action', action);
-                        if (data) {
-                            for (const key in data) {
-                                if (data[key] !== null && data[key] !== undefined) {
-                                    formData.append(key, data[key]);
-                                }
-                            }
-                        }
-                        requestBody = formData;
-                    }
+                    const fileEntry = document.createElement('div');
+                    fileEntry.className = 'file-entry';
+                    fileEntry.setAttribute('data-index', index);
                     
-                    console.log('Sending request:', action, isFileUpload ? 'with file' : 'normal');
+                    fileEntry.innerHTML = `
+                        <div class="file-entry-info">
+                            <span class="file-icon">${getFileIcon(file.type)}</span> 
+                            <span class="file-name" title="${file.name}">${file.name}</span>
+                        </div>
+                        <span class="remove-btn" title="ลบไฟล์">❌</span>
+                    `;
                     
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        body: requestBody
+                    // Attach event listener for the remove button
+                    fileEntry.querySelector('.remove-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); // Stop click from propagating to the file entry/upload box
+                        removeFile(index);
+                    });
+                    
+                    // Attach event listener for preview on click
+                    fileEntry.addEventListener('click', (e) => {
+                        // Open temporary URL in a new tab for preview
+                        window.open(tempUrl, '_blank');
                     });
 
-                    console.log('Response status:', response.status);
-                    console.log('Response ok:', response.ok);
+                    fileListContainer.appendChild(fileEntry);
+                });
 
-                    // ตรวจสอบว่า response สำเร็จหรือไม่
+                checkFormValidity();
+            }
+
+            // Function to remove a specific file by index
+            function removeFile(indexToRemove) {
+                console.log(`🗑️ File Removed: ลบไฟล์ที่ index ${indexToRemove}`);
+                selectedFiles.splice(indexToRemove, 1);
+                // The input itself is never fully reset, only its value is cleared before a new selection
+                photoUploadInput.value = ''; 
+                renderFileList();
+            }
+
+            // Function to handle the file selection change
+            function handleFileChange() {
+                const newFiles = Array.from(photoUploadInput.files);
+                
+                if (newFiles.length > 0) {
+                    console.log(`📥 New Files Added: เพิ่มไฟล์ใหม่ ${newFiles.length} ไฟล์`);
+                    
+                    // Append new files to the existing collection
+                    selectedFiles.push(...newFiles);
+
+                    // Reset the value of the input so the 'change' event fires again if the user selects the same file(s)
+                    photoUploadInput.value = ''; 
+                    
+                    // Re-render the list
+                    renderFileList();
+                }
+            }
+            photoUploadInput.addEventListener('change', handleFileChange);
+
+            // 1. Splash Screen Logic (Updated: Simple Fade-out)
+            setTimeout(() => {
+                console.log('⏰ Splash Screen: เริ่ม Fade-out');
+                
+                smallLogo.style.opacity = '0';
+                splashScreen.classList.add('fade-out'); 
+
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    mainContent.classList.add('fade-in'); 
+                    smallLogo.style.opacity = '1'; 
+                    
+                }, 700); 
+
+                getDropdownData();
+                    
+            }, 3000); 
+
+            // 2. API Fetch Function (Non-file submission)
+            async function callApi(action, data) {
+                console.log(`📡 API Call: เรียกใช้ action "${action}"`);
+                const formData = new FormData();
+                formData.append('action', action);
+                for (const key in data) {
+                    formData.append(key, data[key]);
+                }
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Response error text:', errorText);
-                        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                        throw new Error(`HTTP Error! Status: ${response.status}`);
                     }
-                    
-                    const responseText = await response.text();
-                    console.log('Raw response:', responseText);
-                    
-                    try {
-                        const result = JSON.parse(responseText);
-                        console.log('Parsed result:', result);
-                        return result;
-                    } catch (parseError) {
-                        console.error('JSON parse error:', parseError);
-                        console.error('Response was:', responseText);
-                        throw new Error('Invalid response format from server');
-                    }
+
+                    const result = await response.json();
+                    console.log(`✅ API Call: "${action}" สำเร็จ.`);
+                    return result;
+
                 } catch (error) {
-                    console.error("API call failed:", error);
-                    
-                    // ให้ข้อความ error ที่ละเอียดมากขึ้น
-                    if (error.message.includes('Failed to fetch')) {
-                        throw new Error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต");
-                    } else if (error.message.includes('HTTP error')) {
-                        throw new Error("เซิร์ฟเวอร์ตอบสนองผิดพลาด: " + error.message);
-                    } else if (error.message.includes('Invalid response format')) {
-                        throw new Error("ได้รับข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง");
-                    } else {
-                        throw error;
-                    }
+                    console.error(`❌ API Call: "${action}" ล้มเหลว. ข้อผิดพลาด:`, error);
+                    throw new Error(`Failed to connect to the server or API call failed. Details: ${error.message}`);
                 }
             }
 
             // 3. User Login & Validation
             loginBtn.addEventListener('click', async () => {
                 const userId = userIdInput.value.trim();
+                console.log(`👤 Login Attempt: ผู้ใช้กรอก User ID: "${userId}"`);
+
                 if (!userId) {
                     loginMessage.textContent = 'กรุณากรอก User ID';
                     loginMessage.className = 'message error';
                     return;
                 }
-
-                loginMessage.textContent = 'กำลังตรวจสอบ...';
-                loginMessage.className = 'message';
+                
+                // แสดง Icon Loading แทนข้อความ
+                loginMessage.textContent = ''; 
+                loginMessage.className = 'message'; 
+                loginMessage.innerHTML = '<div class="spinner"></div>'; 
 
                 try {
                     const response = await callApi('validateUser', { employeeId: userId });
+                    
                     if (response.isValid) {
+                        console.log('✅ Login Success: ผู้ใช้ผ่านการตรวจสอบ');
                         employeeId = userId;
                         loginForm.style.display = 'none';
                         dataForm.style.display = 'block';
-                        loginMessage.textContent = '';
+                        loginMessage.innerHTML = ''; 
+                        checkFormValidity();
                     } else {
-                        loginMessage.textContent = response.message || 'User ID ไม่ถูกต้อง';
+                        console.warn('❌ Login Failed:', response.message);
+                        loginMessage.innerHTML = response.message || 'User ID ไม่ถูกต้อง'; 
                         loginMessage.className = 'message error';
                     }
                 } catch (error) {
-                    loginMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message;
+                    console.error('❌ Connection Error during Login:', error);
+                    loginMessage.innerHTML = 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message;
                     loginMessage.className = 'message error';
                 }
             });
 
             // 4. Populate Dropdown List
             async function getDropdownData() {
+                console.log('🔄 Dropdown Load: เริ่มต้นดึงชื่อแก๊สจาก API');
                 try {
-                    const gasNames = await callApi('getGasNames', {});
+                    const result = await callApi('getGasNames', {});
+                    const gasNames = result.gasNames || []; 
+
                     gasTypeInput.innerHTML = '<option value="">เลือกประเภทแก๊ส</option>';
-                    
-                    if (Array.isArray(gasNames)) {
+
+                    if (gasNames.length > 0) {
                         gasNames.forEach(name => {
                             const option = document.createElement('option');
                             option.value = name;
                             option.textContent = name;
                             gasTypeInput.appendChild(option);
                         });
+                        console.log('✅ Dropdown Load: โหลดชื่อแก๊สสำเร็จ:', gasNames);
+                    } else {
+                        console.warn('⚠️ Dropdown Load: API ไม่คืนค่าชื่อแก๊สหรือคืนค่าว่าง');
+                        const option = document.createElement('option');
+                        option.textContent = 'ไม่พบข้อมูลแก๊ส';
+                        gasTypeInput.appendChild(option);
                     }
                 } catch (error) {
-                    console.error('Failed to get gas names:', error);
+                    console.error('❌ Dropdown Load Failed:', error);
                     const option = document.createElement('option');
-                    option.textContent = 'ไม่สามารถโหลดข้อมูลได้';
+                    option.textContent = 'ไม่สามารถโหลดข้อมูลได้ (Error)';
                     gasTypeInput.appendChild(option);
                     gasTypeInput.disabled = true;
                 }
             }
-
-            // 5. File Upload Handler - แสดงข้อมูลไฟล์
-            photoUploadInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    // ตรวจสอบประเภทไฟล์
-                    if (!file.type.startsWith('image/')) {
-                        fileInfo.innerHTML = '<span style="color: red;">กรุณาเลือกไฟล์รูปภาพเท่านั้น</span>';
-                        photoUploadInput.value = '';
-                        checkFormValidity();
-                        return;
-                    }
-                    
-                    // ตรวจสอบขนาดไฟล์ (5MB)
-                    const maxSize = 5 * 1024 * 1024;
-                    if (file.size > maxSize) {
-                        fileInfo.innerHTML = '<span style="color: red;">ไฟล์ใหญ่เกิน 5MB กรุณาเลือกไฟล์ใหม่</span>';
-                        photoUploadInput.value = '';
-                        checkFormValidity();
-                        return;
-                    }
-                    
-                    fileInfo.innerHTML = `<span class="file-selected">✓ เลือกไฟล์: ${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>`;
-                } else {
-                    fileInfo.innerHTML = '';
-                }
-                checkFormValidity();
-            });
-
-            // 6. Form Validation (real-time)
-            const inputs = [gasTypeInput, remainPressureInput, photoUploadInput];
-            function checkFormValidity() {
-                const allFilled = inputs.every(input => {
-                    if (input.type === 'file') {
-                        return input.files && input.files.length > 0;
-                    }
-                    return input.value && input.value.trim() !== '';
-                });
-                
-                submitBtn.disabled = !allFilled;
-                submitBtn.style.backgroundColor = allFilled ? '#2c3e50' : '#bdc3c7';
-            }
             
-            inputs.forEach(input => {
+            // 7. Form Validation (real-time)
+            const requiredInputs = [gasTypeInput, remainPressureInput];
+
+            function checkFormValidity() {
+                const allFilled = requiredInputs.every(input => input.value);
+                // Check if at least one file is attached
+                const filesAttached = selectedFiles.length > 0;
+
+                const isFormValid = allFilled && filesAttached;
+
+                submitBtn.disabled = !isFormValid;
+                submitBtn.style.backgroundColor = isFormValid ? '#2c3e50' : '#bdc3c7';
+            }
+            requiredInputs.forEach(input => {
                 input.addEventListener('input', checkFormValidity);
-                input.addEventListener('change', checkFormValidity);
+                input.addEventListener('change', checkFormValidity); 
             });
 
-            // 7. Form Submission - แก้ไขแล้ว
+
+            // 8. Form Submission (File Upload)
             dataEntryForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // ป้องกันการส่งซ้ำ
-                if (submitBtn.disabled) return;
-                
+                console.log('🚀 Submission Attempt: เริ่มต้นส่งข้อมูลฟอร์ม');
+
                 submitBtn.disabled = true;
                 submitMessage.textContent = 'กำลังส่งข้อมูล...';
                 submitMessage.className = 'message';
 
-                const photoFile = photoUploadInput.files[0];
-
-                // ตรวจสอบข้อมูลทั้งหมดอีกครั้ง
-                if (!employeeId || !gasTypeInput.value || !remainPressureInput.value || !photoFile) {
-                    submitMessage.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วนและแนบรูปภาพ';
+                if (selectedFiles.length === 0) {
+                    console.warn('⚠️ Submission Failed: ไม่พบไฟล์รูปภาพ');
+                    submitMessage.textContent = 'กรุณาแนบรูปภาพอย่างน้อย 1 ไฟล์ก่อนส่งข้อมูล';
                     submitMessage.className = 'message error';
                     submitBtn.disabled = false;
                     return;
                 }
 
                 try {
-                    // สร้าง FormData สำหรับส่งข้อมูลพร้อมไฟล์
                     const formData = new FormData();
+                    
+                    // แนบข้อมูลที่ไม่ใช่ไฟล์
                     formData.append('action', 'submitData');
                     formData.append('employeeId', employeeId);
                     formData.append('gasName', gasTypeInput.value);
                     formData.append('remainPressure', remainPressureInput.value);
-                    formData.append('photo', photoFile);
-
-                    console.log('Sending data:', {
-                        action: 'submitData',
-                        employeeId: employeeId,
-                        gasName: gasTypeInput.value,
-                        remainPressure: remainPressureInput.value,
-                        photoName: photoFile.name,
-                        photoSize: photoFile.size
+                    
+                    // แนบไฟล์ทั้งหมด
+                    selectedFiles.forEach((file, index) => {
+                         // Note: We use the same name 'photo' for all files. Google Apps Script handles this automatically.
+                        formData.append('photo', file, file.name); 
                     });
 
-                    // ใช้ callApi แบบพิเศษสำหรับอัปโหลดไฟล์
-                    const result = await callApi('submitData', formData, true);
+                    // ส่งออบเจกต์ FormData ไปที่ API
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                    if (result && result.status === 'success') {
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        console.log('✅ Submission Success: ข้อมูลบันทึกสำเร็จ');
                         submitMessage.textContent = 'บันทึกข้อมูลสำเร็จ!';
                         submitMessage.className = 'message success';
-                        
-                        // รีเซ็ตฟอร์ม
                         dataEntryForm.reset();
-                        fileInfo.innerHTML = '';
-                        checkFormValidity();
+                        selectedFiles = []; // Clear the file array
+                        renderFileList(); // Update UI
                     } else {
-                        const errorMsg = result?.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
-                        submitMessage.textContent = 'บันทึกข้อมูลไม่สำเร็จ: ' + errorMsg;
+                        console.error('❌ Submission Failed (API):', result.message);
+                        submitMessage.textContent = 'บันทึกข้อมูลไม่สำเร็จ: ' + (result.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
                         submitMessage.className = 'message error';
                     }
                 } catch (error) {
-                    console.error('Submission error:', error);
+                    console.error('❌ Submission Error:', error);
                     submitMessage.textContent = 'เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message;
                     submitMessage.className = 'message error';
-                } finally {
-                    submitBtn.disabled = false;
                 }
-            });
-
-            // Allow Enter key to submit login
-            userIdInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    loginBtn.click();
+                
+                // คืนค่าปุ่มให้ใช้งานได้ หากการส่งไม่สำเร็จ
+                if (submitMessage.className.includes('error')) {
+                    checkFormValidity(); // ตรวจสอบอีกครั้งตามสถานะฟอร์ม
                 }
+            }); 
+            
+            // Cleanup on page unload (optional but good practice)
+            window.addEventListener('beforeunload', () => {
+                fileUrls.forEach(url => URL.revokeObjectURL(url));
             });
-
         });
-
