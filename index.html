@@ -4,20 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PLD Chemical Record</title>
+    <!-- Custom Font: Inter (แทน Poppins) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-    
-    <div id="splash-screen">
-        <img src="pld_logo.png" alt="PLD Logo" id="logo">
+     <div id="splash-screen">
+        <!-- โลโก้จะหายไปพร้อมกับ Splash Screen -->
+        <img src="https://placehold.co/320x320/0f3460/ffffff?text=PLD%20Logo" alt="PLD Logo" id="logo">
     </div>
 
     <div id="main-content">
-        <img src="pld_logo.png" alt="PLD Logo" id="small-logo" class="hidden">
-            
+        <!-- โลโก้ขนาดเล็กที่ถูกเปิดเผยหลังจากแอนิเมชันจบ -->
+        <img src="https://placehold.co/100x100/0f3460/ffffff?text=PLD%20Logo" alt="PLD Logo" id="small-logo">
+        
         <div id="login-form">
             <h2>Login</h2>
             <div class="form-group">
@@ -29,30 +32,55 @@
         </div>
 
         <div id="data-form" style="display: none;">
-            <h2>กรอกข้อมูล</h2>
-            <!-- เพิ่ม enctype="multipart/form-data" สำหรับอัปโหลดไฟล์ -->
-            <form id="data-entry-form" enctype="multipart/form-data">
+            <h2>บันทึกข้อมูล Chemical</h2>
+            <form id="data-entry-form">
                 <div class="form-group">
                     <label for="gas-type">ประเภทแก๊ส:</label>
                     <select id="gas-type" required>
                         <option value="">เลือกประเภทแก๊ส</option>
+                        <!-- Options will be populated by JavaScript -->
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="remain-pressure">Remain Pressure:</label>
-                    <input type="number" id="remain-pressure" placeholder="Enter Pressure" step="0.01" min="0" required>
+                    <label for="remain-pressure">Remain Pressure (PSI):</label>
+                    <input type="number" id="remain-pressure" placeholder="กรอกแรงดันคงเหลือ" required min="0">
                 </div>
+                
+                <!-- FILE UPLOAD SECTION (Updated UI for Multiple Files) -->
                 <div class="form-group">
-                    <label for="photo-upload">แนบรูปถ่าย:</label>
-                    <input type="file" id="photo-upload" accept="image/*" required>
-                    <div id="file-info"></div>
+                    <label>แนบรูปถ่าย:</label>
+                    <!-- File input (hidden) with MULTIPLE attribute -->
+                    <input type="file" id="photo-upload" accept="image/*" multiple required> 
+                    
+                    <!-- Main Box Container (Now handles list and prompt/add button) -->
+                    <div id="upload-box" class="custom-file-upload"> 
+                        
+                        <!-- Attached file list container (scrollable) -->
+                        <div id="file-list-container">
+                            <!-- File items will be injected here -->
+                        </div>
+
+                        <!-- Label that triggers the file input -->
+                        <label for="photo-upload" id="upload-prompt-label">
+                            <!-- Default prompt content (visible when NO files attached) -->
+                            <div id="upload-prompt">
+                                <span class="upload-icon">📸</span>
+                                คลิกที่นี่เพื่อแนบรูปถ่าย
+                            </div>
+                            <!-- 'Add More' button (visible when files ARE attached) -->
+                            <div id="add-more-files" style="display: none;">
+                                <span class="upload-icon">+</span>
+                                แนบไฟล์เพิ่ม
+                            </div>
+                        </label>
+                    </div>
                 </div>
+                
                 <button type="submit" id="submit-btn" disabled>ส่งข้อมูล</button>
             </form>
             <p id="submit-message" class="message"></p>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
