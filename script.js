@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
             // IMPORTANT: Paste your deployed Google Apps Script API URL here
-            const API_URL = 'https://script.google.com/macros/s/AKfycbzk_NR-n_Yiti88yyAjbcrHTBaT1Owlhiq8pymy6SWuwOUfZaOXPWiWEuKc3N1QXhaMJA/exec';
+            const API_URL = 'https://script.google.com/macros/s/AKfycbx0zTimWAn_kjLrd-XUTTkKmiTdEm2ux4P-XF7RwwWGGBsiOV8Gry0LKTDEChp_fn4QVw/exec';
             
             // Select all necessary HTML elements once
             const splashScreen = document.getElementById('splash-screen');
@@ -269,4 +269,5 @@ document.addEventListener('DOMContentLoaded', () => {
                     loginBtn.click();
                 }
             });
+
         });
