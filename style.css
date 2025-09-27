@@ -1,0 +1,243 @@
+/* -------------------------------------- */
+/* BASE STYLES & FONT */
+/* -------------------------------------- */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f7f9;
+    color: #2c3e50;
+    overflow-x: hidden; /* ป้องกัน horizontal scrolling */
+}
+
+/* -------------------------------------- */
+/* SPLASH SCREEN & LOGO ANIMATION */
+/* -------------------------------------- */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a1f44, #0f3460);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease-in-out;
+    z-index: 1000;
+}
+
+#logo {
+    width: 280px;
+    height: 280px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+    transition: transform 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.logo-shrink-up {
+    animation: shrinkAndMoveUp 1.2s forwards cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+#splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none; /* ป้องกันการคลิกเมื่อ fade-out */
+}
+
+@keyframes shrinkAndMoveUp {
+    0% {
+        width: 280px;
+        height: 280px;
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        width: 80px;
+        height: 80px;
+        transform: translateY(-40vh) scale(0.8);
+        opacity: 0.8;
+    }
+}
+
+/* -------------------------------------- */
+/* MAIN CONTENT & FORMS */
+/* -------------------------------------- */
+#main-content {
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    text-align: center;
+    transition: opacity 1s ease-in;
+    display: none;
+    box-sizing: border-box; /* สำคัญสำหรับ responsive */
+}
+
+#main-content.fade-in {
+    display: block;
+    opacity: 1;
+}
+
+#small-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 30px;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.1));
+    transition: transform 0.3s ease;
+}
+
+.hidden {
+    display: none;
+}
+
+h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#login-btn {
+    background-color: #007bff;
+}
+
+#login-btn:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+#submit-btn {
+    background-color: #2c3e50;
+}
+
+#submit-btn:hover:enabled {
+    background-color: #1a242f;
+    transform: translateY(-2px);
+}
+
+#submit-btn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.message {
+    margin-top: 15px;
+    font-weight: 600;
+}
+
+.error {
+    color: #e74c3c;
+}
+
+.success {
+    color: #27ae60;
+}
+
+/* -------------------------------------- */
+/* FILE UPLOAD & RESPONSIVENESS */
+/* -------------------------------------- */
+.file-upload-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    text-align: center;
+}
+
+.file-label {
+    background-color: #3498db;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: 600;
+}
+
+.file-label:hover {
+    background-color: #2980b9;
+}
+
+#photo-upload {
+    display: none; /* ซ่อน input type="file" เดิม */
+}
+
+.file-status {
+    color: #7f8c8d;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+/* -------------------------------------- */
+/* RESPONSIVE LAYOUT (FOR MOBILE) */
+/* -------------------------------------- */
+@media (max-width: 550px) {
+    body {
+        align-items: flex-start;
+        padding: 0;
+    }
+
+    #main-content {
+        padding: 20px;
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    #small-logo {
+        margin-bottom: 20px;
+        width: 60px;
+        height: 60px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+}

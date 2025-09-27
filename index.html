@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLD Chemical Record</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="splash-screen">
+        <img src="pld_logo.png" alt="PLD Logo" id="logo">
+    </div>
+
+    <div id="main-content">
+        <img src="pld_logo.png" alt="PLD Logo" id="small-logo" class="hidden">
+            
+        <div id="login-form">
+            <h2>Login</h2>
+            <div class="form-group">
+                <label for="user-id">User ID:</label>
+                <input type="text" id="user-id" placeholder="Enter User ID" required>
+            </div>
+            <button id="login-btn">เข้าสู่ระบบ</button>
+            <p id="login-message" class="message"></p>
+        </div>
+
+        <div id="data-form" style="display: none;">
+            <h2>กรอกข้อมูล</h2>
+            <!-- เพิ่ม enctype="multipart/form-data" สำหรับอัปโหลดไฟล์ -->
+            <form id="data-entry-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="gas-type">ประเภทแก๊ส:</label>
+                    <select id="gas-type" required>
+                        <option value="">เลือกประเภทแก๊ส</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="remain-pressure">Remain Pressure:</label>
+                    <input type="number" id="remain-pressure" placeholder="Enter Pressure" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="photo-upload">แนบรูปถ่าย:</label>
+                    <input type="file" id="photo-upload" accept="image/*" required>
+                    <div id="file-info"></div>
+                </div>
+                <button type="submit" id="submit-btn" disabled>ส่งข้อมูล</button>
+            </form>
+            <p id="submit-message" class="message"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
